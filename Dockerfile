@@ -11,7 +11,10 @@ RUN apk add --no-cache nodejs npm python3 make g++ bash
 WORKDIR /app
 
 # Kopírování všech souborů
-COPY . .
+COPY package.json ./
+COPY server.js ./
+COPY frontend/ ./frontend/
+COPY run.sh /
 
 # Instalace NodeJS balíků
 RUN npm install --production
