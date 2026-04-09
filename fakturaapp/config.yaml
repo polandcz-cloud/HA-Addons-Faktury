@@ -1,6 +1,6 @@
 name: "FakturaApp"
 description: "Český fakturační systém – faktury, nabídky, ARES, QR Platba, PDF"
-version: "2.1.1"
+version: "2.1.2"
 slug: "fakturaapp"
 url: "https://github.com/polandcz-cloud/HA-Addons-Faktury"
 image: "ghcr.io/polandcz-cloud/ha-addons-faktury/{arch}"
