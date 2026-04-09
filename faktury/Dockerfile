@@ -5,7 +5,14 @@ FROM $BUILD_FROM
 USER root
 
 # Instalace potřebných balíků
-RUN apk add --no-cache nodejs npm python3 make g++ bash
+RUN apk add --no-cache \
+    nodejs \
+    npm \
+    python3 \
+    make \
+    g++ \
+    sqlite-dev \
+    bash
 
 # Pracovní adresář
 WORKDIR /app
