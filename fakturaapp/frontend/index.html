@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FakturaApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f5f9;--sf:#fff;--sf2:#f8fafc;--bd:#e2e8f0;--tx:#1e293b;--tx2:#475569;--tx3:#94a3b8;--pr:#0f172a;--ac:#3b82f6;--ac2:#2563eb;--gn:#10b981;--rd:#ef4444;--am:#f59e0b;--pp:#8b5cf6;--tl:#0d9488;--r:10px;--sh:0 1px 3px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+input,select,textarea,button{font-family:inherit}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--bd);border-radius:8px;font-size:13.5px;outline:none;transition:border .2s;background:#fff;color:var(--tx)}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+select{cursor:pointer}textarea{resize:vertical;min-height:64px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-pr{background:var(--pr);color:#fff}.btn-ac{background:var(--ac);color:#fff}.btn-gh{background:0;color:var(--tx2);border:1.5px solid var(--bd)}
+.btn-pp{background:var(--pp);color:#fff}.btn-tl{background:var(--tl);color:#fff}.btn-dn{background:#fef2f2;color:var(--rd);border:1px solid #fecaca}
+.btn-sm{padding:6px 12px;font-size:12px}
+.lb{display:block;font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.card{background:var(--sf);border-radius:var(--r);padding:24px;box-shadow:var(--sh);border:1px solid var(--bd)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1.5px solid var(--bd);border-radius:7px;background:var(--sf);cursor:pointer;color:var(--tx2);transition:all .15s;font-size:13px}
+.ib:hover{background:var(--sf2)}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;background:var(--sf2);border-bottom:1.5px solid var(--bd)}
+td{padding:11px 14px;border-bottom:1px solid var(--bd);font-size:13px}
+.st{font-size:15px;font-weight:700;color:var(--pr);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.st::before{content:'';width:3px;height:18px;border-radius:2px}
+.st-ac::before{background:var(--ac)}.st-pp::before{background:var(--pp)}.st-tl::before{background:var(--tl)}.st-am::before{background:var(--am)}.st-gn::before{background:var(--gn)}
+.side{width:220px;background:var(--pr);color:#fff;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:100}
+.side nav button{display:flex;align-items:center;gap:10px;width:100%;padding:11px 20px;background:0;border:0;color:#94a3b8;font-size:13.5px;cursor:pointer;border-left:3px solid transparent;font-family:inherit;transition:all .15s}
+.side nav button:hover{color:#e2e8f0;background:rgba(255,255,255,.04)}
+.side nav button.on{color:#fff;background:rgba(59,130,246,.12);border-left-color:var(--ac);font-weight:600}
+.main{margin-left:220px;padding:28px 36px;min-height:100vh}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--pr);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:fi .3s}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fi{animation:fi .3s ease-out}
+@media(max-width:900px){.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.main{margin-left:0;padding:16px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script>
+const e=React.createElement,{useState:uS,useEffect:uE,useRef:uR,useMemo:uM}=React;
+
+// ═══ API ═══
+const A={
+  g:u=>fetch('/api'+u).then(r=>r.json()),
+  p:(u,d)=>fetch('/api'+u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(r=>r.json()),
+  u:(u,d)=>fetch('/api'+u,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(r=>r.json()),
+  pa:(u,d)=>fetch('/api'+u,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(r=>r.json()),
+  d:u=>fetch('/api'+u,{method:'DELETE'}).then(r=>r.json()),
+};
+
+// ═══ HELPERS ═══
+const fm=n=>new Intl.NumberFormat("cs-CZ",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const fd=d=>{if(!d)return"";const p=d.split("-");return p[2]+"."+p[1]+"."+p[0];};
+const td=()=>new Date().toISOString().slice(0,10);
+const ad=(d,n)=>{const t=new Date(d);t.setDate(t.getDate()+n);return t.toISOString().slice(0,10);};
+const ui=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const MN=["Led","Úno","Bře","Dub","Kvě","Čvn","Čvc","Srp","Zář","Říj","Lis","Pro"];
+const PM=[{l:"Převodem",v:"bank"},{l:"Hotově",v:"cash"},{l:"Kartou",v:"card"}];
+const VR=[{l:"21%",v:21},{l:"12%",v:12},{l:"0%",v:0}];
+const UN=["ks","hod","m","m²","m³","kg","l","komplet","den"];
+
+const IS={draft:{l:"Rozpracovaná",c:"#8b5cf6",b:"#f5f3ff"},new:{l:"Nová",c:"#3b82f6",b:"#eff6ff"},sent:{l:"Odeslaná",c:"#f59e0b",b:"#fffbeb"},paid:{l:"Uhrazená",c:"#10b981",b:"#ecfdf5"},overdue:{l:"Po splatnosti",c:"#ef4444",b:"#fef2f2"},cancelled:{l:"Storno",c:"#6b7280",b:"#f3f4f6"}};
+const QS={draft:{l:"Rozpracovaná",c:"#8b5cf6",b:"#f5f3ff"},new:{l:"Nová",c:"#0d9488",b:"#f0fdfa"},sent:{l:"Odeslaná",c:"#f59e0b",b:"#fffbeb"},approved:{l:"Schválená",c:"#10b981",b:"#ecfdf5"},rejected:{l:"Odmítnutá",c:"#ef4444",b:"#fef2f2"},expired:{l:"Vypršená",c:"#6b7280",b:"#f3f4f6"},invoiced:{l:"Fakturováno",c:"#3b82f6",b:"#eff6ff"}};
+
+function ci(it,vat){const b=it.qty*it.unit_price;const v=vat?b*(it.vat_rate/100):0;return{base:b,vat:v,total:b+v};}
+function cI(inv,vat,disc){let tb=0,tv=0;const vs={};for(const it of(inv.items||[])){const c=ci(it,vat);tb+=c.base;tv+=c.vat;if(vat&&it.vat_rate>0){if(!vs[it.vat_rate])vs[it.vat_rate]={base:0,vat:0};vs[it.vat_rate].base+=c.base;vs[it.vat_rate].vat+=c.vat;}}
+  const d=disc||0;const db=tb*(d/100);const dv=tv*(d/100);
+  return{totalBase:tb-db,totalVat:tv-dv,total:(tb+tv)-(db+dv),discount:db+dv,vatSummary:vs};}
+
+async function ares(ico){
+  try{const r=await fetch('https://ares.gov.cz/ekonomicke-subjekty-v-registru-ekonomickych-subjektu/rest/ekonomicke-subjekty/'+ico);
+  if(!r.ok)throw 0;const d=await r.json();const a=d.sidlo||{};
+  return{name:d.obchodniJmeno||"",ico:d.ico||ico,dic:d.dic||"",street:[a.nazevUlice,a.cisloDomovni?(a.cisloDomovni+(a.cisloOrientacni?"/"+a.cisloOrientacni:"")):""].filter(Boolean).join(" "),city:a.nazevObce||"",zip:a.psc?String(a.psc):""};
+  }catch{return null;}
+}
+
+// ═══ QR + PDF ═══
+function spd(s,inv,amt){const p=["SPD*1.0"];if(s.iban)p.push("ACC:"+s.iban.replace(/\s/g,""));p.push("AM:"+amt.toFixed(2));p.push("CC:"+(s.currency||"CZK"));p.push("X-VS:"+inv.number.replace(/\D/g,""));return p.join("*");}
+function qr(d){return"https://api.qrserver.com/v1/create-qr-code/?size=160x160&data="+encodeURIComponent(d);}
+
+function pdfInv(inv,sup){
+  const vat=sup.is_vat_payer;const c=cI(inv,vat);const bk=sup.bank_account?sup.bank_account+"/"+sup.bank_code:"";
+  const q=qr(spd(sup,inv,c.total));const vs=inv.number.replace(/\D/g,"");const pm=(PM.find(m=>m.v===inv.payment_method)||{}).l||"";
+  const logo=sup.logo_image?'<img src="'+sup.logo_image+'" style="max-height:50px;max-width:180px;object-fit:contain"/>':sup.logo_text?'<div style="font-size:22px;font-weight:800;letter-spacing:-1px">'+sup.logo_text+'</div>':'';
+  return'<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Faktura '+inv.number+'</title><style>@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");*{margin:0;padding:0;box-sizing:border-box}body{font-family:Outfit,sans-serif;color:#1e293b;padding:40px 48px;font-size:13px;line-height:1.5;max-width:800px;margin:0 auto}.hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #0f172a}.hd-l{display:flex;align-items:center;gap:14}.hd h1{font-size:30px;font-weight:800;letter-spacing:-1px}.hd .sub{font-size:12px;color:#64748b;margin-top:3px}.pts{display:flex;gap:40px;margin-bottom:24px}.pt{flex:1}.pt h3{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:6px;font-weight:600}.pt .nm{font-size:15px;font-weight:700;margin-bottom:4px}.pt p{margin-bottom:1px;color:#475569;font-size:12px}.mt{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;background:#f8fafc;padding:14px 18px;border-radius:8px;border:1px solid #e2e8f0}.mt .lb{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8}.mt .vl{font-weight:600;font-size:12.5px;margin-top:2px}table{width:100%;border-collapse:collapse;margin-bottom:20px}thead th{background:#0f172a;color:#fff;padding:9px 12px;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:1.5px}thead th:nth-child(n+3){text-align:right}tbody td{padding:9px 12px;border-bottom:1px solid #e2e8f0;font-size:12px}tbody td:nth-child(n+3){text-align:right}.sm{display:flex;justify-content:space-between;margin-bottom:20px}.sm .qr{text-align:center}.sm .qr img{width:130px;height:130px;border:1px solid #e2e8f0;border-radius:6px;padding:3px}.sm .qr p{font-size:9px;color:#94a3b8;margin-top:4px}.sm table{width:260px}.sm td{padding:5px 10px;border:none;font-size:12px}.sm .tot{font-size:18px;font-weight:800}.sm .tr td{border-top:3px solid #0f172a;padding-top:8px}.py{background:#f8fafc;padding:14px 18px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:12px}.py h4{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin-bottom:6px}.py p{font-size:12px;margin-bottom:2px;color:#475569}.py strong{color:#1e293b}.nt{color:#64748b;font-size:11px;font-style:italic;margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0}@media print{body{padding:20px}}</style></head><body><div class="hd"><div class="hd-l">'+logo+'<div><h1>FAKTURA</h1><div class="sub">č. '+inv.number+'</div></div></div><div style="text-align:right;font-size:11px;color:#64748b">'+(vat?"Daňový doklad":"Faktura")+'<br>VS: <strong>'+vs+'</strong></div></div><div class="pts"><div class="pt"><h3>Dodavatel</h3><div class="nm">'+sup.name+'</div><p>'+sup.street+'</p><p>'+sup.zip+' '+sup.city+'</p><p>IČO: '+sup.ico+(sup.dic?' · DIČ: '+sup.dic:'')+'</p>'+(sup.email?'<p>'+sup.email+'</p>':'')+'</div><div class="pt"><h3>Odběratel</h3><div class="nm">'+inv.customer.name+'</div><p>'+inv.customer.street+'</p><p>'+inv.customer.zip+' '+inv.customer.city+'</p><p>IČO: '+inv.customer.ico+(inv.customer.dic?' · DIČ: '+inv.customer.dic:'')+'</p></div></div><div class="mt"><div><div class="lb">Vystavení</div><div class="vl">'+fd(inv.issue_date)+'</div></div>'+(vat?'<div><div class="lb">DUZP</div><div class="vl">'+fd(inv.taxable_date)+'</div></div>':'<div></div>')+'<div><div class="lb">Splatnost</div><div class="vl">'+fd(inv.due_date)+'</div></div><div><div class="lb">Úhrada</div><div class="vl">'+pm+'</div></div></div><table><thead><tr><th style="width:40%">Popis</th><th>Mn.</th><th>Cena/ks</th>'+(vat?'<th>DPH</th>':'')+'<th>Celkem</th></tr></thead><tbody>'+inv.items.map(function(it){var x=ci(it,vat);return'<tr><td>'+it.description+'</td><td style="text-align:center">'+it.qty+' '+it.unit+'</td><td>'+fm(it.unit_price)+' Kč</td>'+(vat?'<td>'+it.vat_rate+'%</td>':'')+'<td style="font-weight:600">'+fm(x.total)+' Kč</td></tr>';}).join('')+'</tbody></table><div class="sm"><div class="qr"><img src="'+q+'" alt="QR"/><p>QR Platba</p></div><table><tr><td style="color:#64748b">Základ:</td><td style="text-align:right">'+fm(c.totalBase)+' Kč</td></tr>'+(vat?Object.keys(c.vatSummary).map(function(r){return'<tr><td style="color:#64748b">DPH '+r+'%:</td><td style="text-align:right">'+fm(c.vatSummary[r].vat)+' Kč</td></tr>';}).join(''):'')+'<tr class="tr"><td class="tot">Celkem:</td><td class="tot" style="text-align:right">'+fm(c.total)+' Kč</td></tr></table></div>'+(bk?'<div class="py"><h4>Platba</h4><p>Účet: <strong>'+bk+'</strong></p><p>VS: <strong>'+vs+'</strong></p>'+(sup.iban?'<p>IBAN: <strong>'+sup.iban+'</strong></p>':'')+'</div>':'')+(inv.note?'<div class="nt">'+inv.note+'</div>':'')+'<script>window.onload=function(){setTimeout(function(){window.print()},500)}<\/script></body></html>';
+}
+
+function pdfQuote(q,sup){
+  const vat=sup.is_vat_payer;const c=cI(q,vat,q.discount_percent);
+  const logo=sup.logo_image?'<img src="'+sup.logo_image+'" style="max-height:50px;max-width:180px;object-fit:contain"/>':sup.logo_text?'<div style="font-size:22px;font-weight:800;letter-spacing:-1px">'+sup.logo_text+'</div>':'';
+  return'<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Nabídka '+q.number+'</title><style>@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");*{margin:0;padding:0;box-sizing:border-box}body{font-family:Outfit,sans-serif;color:#1e293b;padding:40px 48px;font-size:13px;line-height:1.5;max-width:800px;margin:0 auto}.hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #0d9488}.hd-l{display:flex;align-items:center;gap:14}.hd h1{font-size:30px;font-weight:800;letter-spacing:-1px;color:#0d9488}.hd .sub{font-size:12px;color:#64748b;margin-top:3px}.pts{display:flex;gap:40px;margin-bottom:24px}.pt{flex:1}.pt h3{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#94a3b8;margin-bottom:6px;font-weight:600}.pt .nm{font-size:15px;font-weight:700;margin-bottom:4px}.pt p{margin-bottom:1px;color:#475569;font-size:12px}.mt{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;background:#f0fdfa;padding:14px 18px;border-radius:8px;border:1px solid #99f6e4}.mt .lb{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8}.mt .vl{font-weight:600;font-size:12.5px;margin-top:2px}.intro{margin-bottom:20px;padding:14px 18px;background:#f0fdfa;border-radius:8px;border:1px solid #99f6e4;font-size:13px;color:#475569}table{width:100%;border-collapse:collapse;margin-bottom:20px}thead th{background:#0d9488;color:#fff;padding:9px 12px;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:1.5px}thead th:nth-child(n+3){text-align:right}tbody td{padding:9px 12px;border-bottom:1px solid #e2e8f0;font-size:12px}tbody td:nth-child(n+3){text-align:right}.sm{display:flex;justify-content:flex-end;margin-bottom:20px}.sm table{width:280px}.sm td{padding:5px 10px;border:none;font-size:12px}.sm .tot{font-size:18px;font-weight:800;color:#0d9488}.sm .tr td{border-top:3px solid #0d9488;padding-top:8px}.outro{margin-top:16px;padding:14px 18px;background:#f0fdfa;border-radius:8px;border:1px solid #99f6e4;font-size:13px;color:#475569}.ft{margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8}@media print{body{padding:20px}}</style></head><body><div class="hd"><div class="hd-l">'+logo+'<div><h1>CENOVÁ NABÍDKA</h1><div class="sub">č. '+q.number+'</div></div></div><div style="text-align:right;font-size:11px;color:#64748b">Cenová nabídka</div></div><div class="pts"><div class="pt"><h3>Dodavatel</h3><div class="nm">'+sup.name+'</div><p>'+sup.street+'</p><p>'+sup.zip+' '+sup.city+'</p><p>IČO: '+sup.ico+(sup.dic?' · DIČ: '+sup.dic:'')+'</p>'+(sup.email?'<p>'+sup.email+'</p>':'')+'</div><div class="pt"><h3>Odběratel</h3><div class="nm">'+q.customer.name+'</div><p>'+q.customer.street+'</p><p>'+q.customer.zip+' '+q.customer.city+'</p><p>IČO: '+q.customer.ico+(q.customer.dic?' · DIČ: '+q.customer.dic:'')+'</p></div></div><div class="mt"><div><div class="lb">Datum vystavení</div><div class="vl">'+fd(q.issue_date)+'</div></div><div><div class="lb">Platnost do</div><div class="vl">'+fd(q.valid_until)+'</div></div><div></div></div>'+(q.intro_text?'<div class="intro">'+q.intro_text+'</div>':'')+'<table><thead><tr><th style="width:40%">Popis</th><th>Mn.</th><th>Cena/ks</th>'+(vat?'<th>DPH</th>':'')+'<th>Celkem</th></tr></thead><tbody>'+q.items.map(function(it){var x=ci(it,vat);return'<tr><td>'+it.description+'</td><td style="text-align:center">'+it.qty+' '+it.unit+'</td><td>'+fm(it.unit_price)+' Kč</td>'+(vat?'<td>'+it.vat_rate+'%</td>':'')+'<td style="font-weight:600">'+fm(x.total)+' Kč</td></tr>';}).join('')+'</tbody></table><div class="sm"><table><tr><td style="color:#64748b">Základ:</td><td style="text-align:right">'+fm(c.totalBase+(c.discount||0))+' Kč</td></tr>'+(q.discount_percent>0?'<tr><td style="color:#0d9488">Sleva '+q.discount_percent+'%:</td><td style="text-align:right;color:#0d9488">-'+fm(c.discount)+' Kč</td></tr>':'')+'<tr class="tr"><td class="tot">Celkem:</td><td class="tot" style="text-align:right">'+fm(c.total)+' Kč</td></tr></table></div>'+(q.outro_text?'<div class="outro">'+q.outro_text+'</div>':'')+'<div class="ft">Tato nabídka je platná do '+fd(q.valid_until)+'. '+sup.name+' · '+sup.email+'</div><script>window.onload=function(){setTimeout(function(){window.print()},500)}<\/script></body></html>';
+}
+
+// ═══ MAIN APP ═══
+function App(){
+  const[pg,setPg]=uS("dashboard");
+  const[invs,setInvs]=uS([]);const[custs,setCusts]=uS([]);const[recs,setRecs]=uS([]);const[quotes,setQuotes]=uS([]);
+  const[sup,setSup]=uS(null);const[ed,setEd]=uS(null);const[edQ,setEdQ]=uS(null);
+  const[ld,setLd]=uS(true);const[toast,setToast]=uS(null);
+
+  const tt=m=>{setToast(m);setTimeout(()=>setToast(null),2500);};
+  const reload=async()=>{const[s,i,c,r,q]=await Promise.all([A.g('/supplier'),A.g('/invoices'),A.g('/customers'),A.g('/recurrings'),A.g('/quotes')]);setSup(s);setInvs(i);setCusts(c);setRecs(r);setQuotes(q);setLd(false);};
+  uE(()=>{reload();},[]);
+
+  const vat=sup?.is_vat_payer;
+  const drafts=invs.filter(i=>i.status==='draft');
+  const activeInvs=invs.filter(i=>i.status!=='draft');
+
+  // Invoice actions
+  const saveInv=async inv=>{await A.p('/invoices',inv);await reload();setEd(null);setPg("invoices");tt("✓ Uloženo");};
+  const newInv=async(draft)=>{
+    let num='';if(!draft){const r=await A.g('/next-number');num=r.number;}
+    setEd({id:ui(),number:num,issue_date:draft?'':td(),due_date:draft?'':ad(td(),sup?.default_due_days||14),taxable_date:draft?'':td(),payment_method:'bank',customer:{id:ui(),name:'',ico:'',dic:'',street:'',city:'',zip:'',email:''},items:[{id:ui(),description:'',qty:1,unit:'ks',unit_price:0,vat_rate:21}],note:sup?.default_note||'',internal_note:'',status:draft?'draft':'new',paid_date:null,sent_date:null,recurring_id:null,quote_id:null,created_at:td()});
+    setPg("edit-inv");
+  };
+  const editInv=inv=>{setEd({...inv,items:(inv.items||[]).map(i=>({...i})),customer:{...inv.customer}});setPg("edit-inv");};
+  const delInv=async id=>{await A.d('/invoices/'+id);await reload();tt("Smazáno");};
+  const paidInv=async id=>{await A.pa('/invoices/'+id+'/status',{status:'paid'});await reload();tt("✓ Uhrazeno");};
+  const issueInv=async id=>{
+    const inv=invs.find(i=>i.id===id);if(!inv)return;
+    const r=await A.g('/next-number');
+    const up={...inv,status:'new',number:r.number,issue_date:td(),due_date:ad(td(),sup?.default_due_days||14),taxable_date:td()};
+    await A.p('/invoices',up);await reload();tt("✓ Faktura vystavena");
+  };
+  const openPdf=inv=>{const h=pdfInv(inv,sup);const w=window.open('','_blank');if(w){w.document.write(h);w.document.close();}};
+
+  // Quote actions
+  const saveQ=async q=>{await A.p('/quotes',q);await reload();setEdQ(null);setPg("quotes");tt("✓ Nabídka uložena");};
+  const newQ=async(draft)=>{
+    let num='';if(!draft){const r=await A.g('/next-quote-number');num=r.number;}
+    setEdQ({id:ui(),number:num,issue_date:draft?'':td(),valid_until:draft?'':ad(td(),sup?.default_quote_validity_days||30),customer:{id:ui(),name:'',ico:'',dic:'',street:'',city:'',zip:'',email:''},items:[{id:ui(),description:'',qty:1,unit:'ks',unit_price:0,vat_rate:21}],intro_text:sup?.default_quote_intro||'',outro_text:sup?.default_quote_outro||'',note:'',internal_note:'',status:draft?'draft':'new',discount_percent:0,sent_date:null,approved_date:null,rejected_date:null,invoice_id:null,created_at:td()});
+    setPg("edit-q");
+  };
+  const editQ=q=>{setEdQ({...q,items:(q.items||[]).map(i=>({...i})),customer:{...q.customer}});setPg("edit-q");};
+  const delQ=async id=>{await A.d('/quotes/'+id);await reload();tt("Smazáno");};
+  const openQPdf=q=>{const h=pdfQuote(q,sup);const w=window.open('','_blank');if(w){w.document.write(h);w.document.close();}};
+  const approveQ=async id=>{await A.pa('/quotes/'+id+'/status',{status:'approved'});await reload();tt("✓ Schválena");};
+  const rejectQ=async id=>{await A.pa('/quotes/'+id+'/status',{status:'rejected'});await reload();tt("Odmítnuta");};
+  // Convert quote → invoice (or draft invoice)
+  const q2inv=async(q,asDraft)=>{
+    let num='';if(!asDraft){const r=await A.g('/next-number');num=r.number;}
+    const inv={id:ui(),number:num,issue_date:asDraft?'':td(),due_date:asDraft?'':ad(td(),sup?.default_due_days||14),taxable_date:asDraft?'':td(),payment_method:'bank',customer:{...q.customer},items:q.items.map(i=>({...i,id:ui()})),note:q.note||sup?.default_note||'',internal_note:'Z nabídky '+q.number,status:asDraft?'draft':'new',paid_date:null,sent_date:null,recurring_id:null,quote_id:q.id,created_at:td()};
+    await A.p('/invoices',inv);
+    await A.pa('/quotes/'+q.id+'/status',{status:'invoiced'});
+    await reload();tt("✓ Faktura vytvořena z nabídky");setPg("invoices");
+  };
+
+  if(ld)return e('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',fontFamily:"'Outfit',sans-serif"}},e('div',{style:{textAlign:'center'}},e('div',{style:{fontSize:36,fontWeight:800,letterSpacing:'-1.5px',color:'#0f172a'}},'FakturaApp'),e('div',{style:{marginTop:8,color:'#94a3b8'}},'Načítání…')));
+
+  const nav=[
+    {id:'dashboard',l:'Přehledy',i:'📊'},
+    {id:'quotes',l:'Nabídky',i:'📋',badge:quotes.filter(q=>q.status==='approved').length},
+    {id:'invoices',l:'Faktury',i:'📄'},
+    {id:'drafts',l:'Rozpracované',i:'✏️',badge:drafts.length},
+    {id:'recurring',l:'Pravidelné',i:'🔄'},
+    {id:'customers',l:'Odběratelé',i:'👥'},
+    {id:'payments',l:'Platby',i:'💳'},
+    {id:'settings',l:'Nastavení',i:'⚙️'},
+  ];
+  const isOn=id=>pg===id||(pg==='edit-inv'&&(id==='invoices'||id==='drafts'))||(pg==='edit-q'&&id==='quotes');
+
+  // ─── SIDEBAR ───
+  const sidebar=e('aside',{className:'side'},
+    e('div',{style:{padding:'24px 20px 16px'}},
+      sup?.logo_image?e('img',{src:sup.logo_image,alt:'Logo',style:{maxHeight:32,maxWidth:150,objectFit:'contain',marginBottom:6,display:'block'}}):
+      sup?.logo_text?e('div',{style:{fontSize:17,fontWeight:800,color:'#fff',marginBottom:4}},sup.logo_text):
+      e('div',{style:{fontSize:19,fontWeight:800}},e('span',{style:{color:'var(--ac)'}},'Faktura'),'App'),
+      e('div',{style:{fontSize:11,color:'#64748b',marginTop:2}},vat?'Plátce DPH':'Neplátce DPH')),
+    e('div',{style:{padding:'0 14px 8px',display:'flex',gap:5}},
+      e('button',{className:'btn btn-ac btn-sm',style:{flex:1,justifyContent:'center'},onClick:()=>newInv(false)},'+ Faktura'),
+      e('button',{className:'btn btn-tl btn-sm',onClick:()=>newQ(false),title:'Nová nabídka'},'📋'),
+      e('button',{className:'btn btn-pp btn-sm',onClick:()=>newInv(true),title:'Rozpracovaná'},'✏️')),
+    e('nav',null,nav.map(n=>e('button',{key:n.id,className:isOn(n.id)?'on':'',onClick:()=>setPg(n.id)},n.i,' ',n.l,
+      n.badge>0?e('span',{style:{marginLeft:'auto',background:n.id==='quotes'?'var(--tl)':'var(--pp)',color:'#fff',fontSize:10,fontWeight:700,padding:'2px 7px',borderRadius:10}},n.badge):null))),
+    e('div',{style:{padding:'14px 20px',fontSize:11,color:'#475569',borderTop:'1px solid rgba(255,255,255,.06)',marginTop:'auto'}},sup?.name||'⚙ Nastavte'));
+
+  // ─── CONTENT ROUTER ───
+  let content=null;
+  if(pg==='dashboard') content=Dashboard({invs:activeInvs,quotes,drafts,sup,vat,onNewI:()=>newInv(false),onNewQ:()=>newQ(false),onNewD:()=>newInv(true),go:setPg,editInv,issueInv,q2inv});
+  else if(pg==='quotes') content=QuoteList({quotes,sup,vat,onNew:()=>newQ(false),onNewDraft:()=>newQ(true),onEdit:editQ,onDel:delQ,onPdf:openQPdf,onApprove:approveQ,onReject:rejectQ,onToInv:q=>q2inv(q,false),onToDraft:q=>q2inv(q,true)});
+  else if(pg==='edit-q'&&edQ) content=QuoteForm({q:edQ,sup,vat,onSave:saveQ,onCancel:()=>setPg('quotes'),custs});
+  else if(pg==='invoices') content=InvList({invs:activeInvs,sup,vat,onNew:()=>newInv(false),onEdit:editInv,onDel:delInv,onPdf:openPdf,onPaid:paidInv});
+  else if(pg==='drafts') content=DraftList({drafts,sup,vat,onNew:()=>newInv(true),onEdit:editInv,onDel:delInv,onIssue:issueInv});
+  else if(pg==='edit-inv'&&ed) content=InvForm({inv:ed,sup,vat,onSave:saveInv,onCancel:()=>setPg(ed.status==='draft'?'drafts':'invoices'),custs});
+  else if(pg==='recurring') content=RecList({recs,sup,vat,reload,tt});
+  else if(pg==='customers') content=CustList({custs,setCusts:async()=>await reload()});
+  else if(pg==='payments') content=PayList({invs:activeInvs,sup,vat,onPaid:paidInv});
+  else if(pg==='settings') content=Sett({sup,reload,tt});
+
+  return e('div',null,sidebar,e('div',{className:'main fi'},content),toast?e('div',{className:'toast'},toast):null);
+}
+
+// ═══ DASHBOARD ═══
+function Dashboard({invs,quotes,drafts,sup,vat,onNewI,onNewQ,onNewD,go,editInv,issueInv,q2inv}){
+  const yr=new Date().getFullYear();const yi=invs.filter(i=>(i.issue_date||'').startsWith(String(yr)));
+  const c=inv=>cI(inv,vat).total;
+  const tot=yi.reduce((s,i)=>s+c(i),0);const paid=yi.filter(i=>i.status==='paid').reduce((s,i)=>s+c(i),0);
+  const unpaid=yi.filter(i=>i.status!=='paid'&&i.status!=='cancelled').reduce((s,i)=>s+c(i),0);
+  const mo=Array.from({length:12},(_,m)=>yi.filter(i=>new Date(i.issue_date).getMonth()===m).reduce((s,i)=>s+c(i),0));
+  const mx=Math.max(...mo,1);
+  const approvedQ=quotes.filter(q=>q.status==='approved');
+  const stats=[{l:'Celkem',v:fm(tot)+' Kč',c:'var(--ac)'},{l:'Uhrazeno',v:fm(paid)+' Kč',c:'var(--gn)'},{l:'Neuhrazeno',v:fm(unpaid)+' Kč',c:'var(--am)'},{l:'Nabídky',v:quotes.filter(q=>q.status!=='rejected'&&q.status!=='expired').length,c:'var(--tl)'}];
+
+  return e('div',null,
+    e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:28}},
+      e('div',null,e('h1',{style:{fontSize:28,fontWeight:800,letterSpacing:'-.75px'}},'Přehledy'),e('p',{style:{color:'var(--tx3)',fontSize:13,marginTop:4}},'Rok '+yr)),
+      e('div',{style:{display:'flex',gap:8}},
+        e('button',{className:'btn btn-tl',onClick:onNewQ},'📋 Nabídka'),
+        e('button',{className:'btn btn-pp',onClick:onNewD},'✏️ Rozpracovaná'),
+        e('button',{className:'btn btn-pr',onClick:onNewI},'+ Nová faktura'))),
+    // Approved quotes banner
+    approvedQ.length>0?e('div',{style:{background:'linear-gradient(135deg,#f0fdfa,#ccfbf1)',border:'1.5px solid #5eead4',borderRadius:10,padding:18,marginBottom:20}},
+      e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}},
+        e('div',{style:{fontSize:14,fontWeight:700,color:'var(--tl)'}},'✓ '+approvedQ.length+' schválených nabídek čeká na fakturaci'),
+        e('button',{className:'btn btn-gh btn-sm',onClick:()=>go('quotes')},'Zobrazit →')),
+      approvedQ.slice(0,3).map(q=>e('div',{key:q.id,style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(13,148,136,.15)'}},
+        e('span',null,e('strong',{style:{color:'var(--tl)'}},q.number),' · ',q.customer?.name,' · ',fm(cI(q,vat,q.discount_percent).total)+' Kč'),
+        e('button',{className:'btn btn-tl btn-sm',onClick:()=>q2inv(q,false)},'→ Fakturovat')))):null,
+    // Draft banner
+    drafts.length>0?e('div',{style:{background:'linear-gradient(135deg,#f5f3ff,#ede9fe)',border:'1.5px solid #c4b5fd',borderRadius:10,padding:18,marginBottom:20}},
+      e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}},
+        e('div',{style:{fontSize:14,fontWeight:700,color:'var(--pp)'}},'✏️ '+drafts.length+' rozpracovaných faktur'),
+        e('button',{className:'btn btn-gh btn-sm',onClick:()=>go('drafts')},'Zobrazit →')),
+      drafts.slice(0,3).map(inv=>e('div',{key:inv.id,style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0'}},
+        e('span',null,e('strong',null,inv.customer?.name||'Bez odběratele'),' · ',inv.items?.length||0,' pol. · ',fm(cI(inv,vat).total)+' Kč'),
+        e('div',{style:{display:'flex',gap:6}},
+          e('button',{className:'btn btn-gh btn-sm',onClick:()=>editInv(inv)},'Upravit'),
+          e('button',{className:'btn btn-pp btn-sm',onClick:()=>issueInv(inv.id)},'Vystavit'))))):null,
+    // Stats
+    e('div',{className:'g4',style:{marginBottom:24}},stats.map((s,i)=>e('div',{key:i,className:'card',style:{borderLeft:'4px solid '+s.c,padding:'20px 24px'}},
+      e('div',{className:'lb'},s.l),e('div',{style:{fontSize:22,fontWeight:800,color:s.c,marginTop:6}},s.v)))),
+    // Chart
+    e('div',{className:'card',style:{marginBottom:24}},
+      e('div',{className:'st st-ac'},'Měsíční přehled'),
+      e('div',{style:{display:'flex',alignItems:'flex-end',gap:6,height:180}},mo.map((v,i)=>e('div',{key:i,style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3}},
+        v>0?e('div',{style:{fontSize:9,color:'var(--tx3)',fontWeight:600}},(v/1000).toFixed(0)+'k'):null,
+        e('div',{style:{width:'100%',maxWidth:40,background:v>0?'linear-gradient(180deg,#3b82f6,#60a5fa)':'#f1f5f9',height:Math.max((v/mx)*140,3),borderRadius:'5px 5px 2px 2px'}}),
+        e('div',{style:{fontSize:10,color:new Date().getMonth()===i?'var(--ac)':'var(--tx3)',fontWeight:new Date().getMonth()===i?700:400}},MN[i]))))));
+}
+
+// ═══ QUOTE LIST ═══
+function QuoteList({quotes,sup,vat,onNew,onNewDraft,onEdit,onDel,onPdf,onApprove,onReject,onToInv,onToDraft}){
+  const[f,sF]=uS('all');
+  const fl=quotes.filter(q=>f==='all'||q.status===f);
+  const tabs=[{id:'all',l:'Všechny ('+quotes.length+')'},{id:'draft',l:'Rozpracované'},{id:'new',l:'Nové'},{id:'sent',l:'Odeslané'},{id:'approved',l:'Schválené'},{id:'rejected',l:'Odmítnuté'},{id:'invoiced',l:'Fakturované'}];
+
+  return e('div',null,
+    e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}},
+      e('h1',{style:{fontSize:28,fontWeight:800,letterSpacing:'-.75px'}},'Cenové nabídky'),
+      e('div',{style:{display:'flex',gap:8}},
+        e('button',{className:'btn btn-gh',onClick:onNewDraft},'✏️ Rozpracovaná'),
+        e('button',{className:'btn btn-tl',onClick:onNew},'+ Nová nabídka'))),
+    e('div',{style:{display:'flex',gap:2,marginBottom:20,borderBottom:'2px solid var(--bd)',overflowX:'auto'}},tabs.map(t=>e('button',{key:t.id,onClick:()=>sF(t.id),style:{padding:'10px 16px',background:'none',border:'none',borderBottom:f===t.id?'2px solid var(--tl)':'2px solid transparent',color:f===t.id?'var(--tl)':'var(--tx3)',fontSize:13,fontWeight:f===t.id?600:500,cursor:'pointer',marginBottom:-2,fontFamily:'inherit',whiteSpace:'nowrap'}},t.l))),
+    e('div',{className:'card',style:{padding:0,overflow:'hidden'}},
+      e('table',null,
+        e('thead',null,e('tr',null,e('th',null,'Číslo'),e('th',null,'Stav'),e('th',null,'Odběratel'),e('th',null,'Vystaveno'),e('th',null,'Platnost'),e('th',{style:{textAlign:'right'}},'Cena'),e('th',null,'Akce'))),
+        e('tbody',null,fl.map(q=>{const t=cI(q,vat,q.discount_percent).total;const s=QS[q.status]||QS.new;
+          return e('tr',{key:q.id},
+            e('td',null,e('span',{style:{fontWeight:600,color:'var(--tl)'}},q.number||'—')),
+            e('td',null,e('span',{className:'badge',style:{color:s.c,background:s.b}},s.l)),
+            e('td',null,q.customer?.name),
+            e('td',null,fd(q.issue_date)),
+            e('td',null,fd(q.valid_until)),
+            e('td',{style:{textAlign:'right',fontWeight:600}},fm(t)+' Kč'),
+            e('td',null,e('div',{style:{display:'flex',gap:3}},
+              e('button',{className:'ib',title:'PDF',onClick:()=>onPdf(q)},'📄'),
+              e('button',{className:'ib',title:'Upravit',onClick:()=>onEdit(q)},'✏️'),
+              q.status==='sent'?e('button',{className:'ib',title:'Schválit',onClick:()=>onApprove(q.id),style:{color:'var(--gn)'}},'✓'):null,
+              q.status==='sent'?e('button',{className:'ib',title:'Odmítnout',onClick:()=>onReject(q.id),style:{color:'var(--rd)'}},'✕'):null,
+              q.status==='approved'?e('button',{className:'ib',title:'→ Faktura',onClick:()=>onToInv(q),style:{color:'var(--ac)'}},'→'):null,
+              q.status==='approved'?e('button',{className:'ib',title:'→ Rozpracovaná',onClick:()=>onToDraft(q),style:{color:'var(--pp)'}},'✏'):null,
+              e('button',{className:'ib',title:'Smazat',onClick:()=>{if(confirm('Smazat nabídku?'))onDel(q.id);},style:{color:'var(--rd)'}},'🗑'))));}))),
+      fl.length===0?e('p',{style:{textAlign:'center',padding:36,color:'var(--tx3)'}},'Žádné nabídky'):null));
+}
+
+// ═══ QUOTE FORM ═══
+function QuoteForm({q:init,sup,vat,onSave,onCancel,custs}){
+  const[q,sQ]=uS(init);const[al,sAl]=uS(false);const[am,sAm]=uS('');
+  const c=cI(q,vat,q.discount_percent);const isDraft=q.status==='draft';
+  const uf=(f,v)=>sQ(p=>({...p,[f]:v}));const uc=(f,v)=>sQ(p=>({...p,customer:{...p.customer,[f]:v}}));
+  const uit=(i,f,v)=>sQ(p=>{const items=[...p.items];items[i]={...items[i],[f]:f==='qty'||f==='unit_price'||f==='vat_rate'?Number(v):v};return{...p,items};});
+  const lk=async()=>{if(!q.customer.ico)return;sAl(true);const d=await ares(q.customer.ico);sAl(false);if(d){sQ(p=>({...p,customer:{...p.customer,...d}}));sAm('✓');}else sAm('✕');};
+
+  return e('div',null,
+    e('h1',{style:{fontSize:28,fontWeight:800,letterSpacing:'-.75px',color:'var(--tl)',marginBottom:4}},isDraft?'Rozpracovaná nabídka':'Nabídka '+(q.number||'')),
+    isDraft?e('p',{style:{color:'var(--tl)',fontSize:13,marginBottom:20}},'Číslo a datum se doplní při dokončení'):e('div',{style:{marginBottom:20}}),
+    e('div',{className:'g2',style:{marginBottom:20}},
+      // Customer
+      e('div',{className:'card'},
+        e('div',{className:'st st-tl'},'Odběratel'),
+        custs.length>0?e('div',{style:{marginBottom:8}},e('label',{className:'lb'},'Vybrat z databáze'),e('select',{value:'',onChange:ev=>{const x=custs.find(c=>c.ico===ev.target.value);if(x)sQ(p=>({...p,customer:{...p.customer,...x}}));}},e('option',{value:''},'— vyberte —'),custs.map(c=>e('option',{key:c.ico,value:c.ico},c.name+' ('+c.ico+')')))):null,
+        e('div',{style:{display:'flex',gap:8,marginBottom:8}},e('div',{style:{flex:1}},e('label',{className:'lb'},'IČO'),e('input',{value:q.customer.ico,onChange:ev=>uc('ico',ev.target.value)})),e('button',{className:'btn btn-tl btn-sm',style:{alignSelf:'flex-end'},onClick:lk},al?'…':'ARES')),
+        am?e('div',{style:{fontSize:12,marginBottom:6,color:am==='✕'?'var(--rd)':'var(--gn)',fontWeight:500}},am==='✓'?'Načteno':'Nenalezeno'):null,
+        ['name','dic','street'].map(f=>e('div',{key:f,style:{marginBottom:6}},e('label',{className:'lb'},{name:'Název',dic:'DIČ',street:'Ulice'}[f]),e('input',{value:q.customer[f]||'',onChange:ev=>uc(f,ev.target.value)}))),
+        e('div',{className:'g2',style:{gap:8}},e('div',null,e('label',{className:'lb'},'Město'),e('input',{value:q.customer.city||'',onChange:ev=>uc('city',ev.target.value)})),e('div',null,e('label',{className:'lb'},'PSČ'),e('input',{value:q.customer.zip||'',onChange:ev=>uc('zip',ev.target.value)})))),
+      // Details
+      e('div',{className:'card'},
+        e('div',{className:'st st-tl'},'Údaje nabídky'),
+        !isDraft?e('div',{className:'g2',style:{gap:10,marginBottom:10}},
+          e('div',null,e('label',{className:'lb'},'Číslo'),e('input',{value:q.number,onChange:ev=>uf('number',ev.target.value)})),
+          e('div',null,e('label',{className:'lb'},'Stav'),e('select',{value:q.status,onChange:ev=>uf('status',ev.target.value)},Object.entries(QS).map(([k,v])=>e('option',{key:k,value:k},v.l)))),
+          e('div',null,e('label',{className:'lb'},'Datum vystavení'),e('input',{type:'date',value:q.issue_date||'',onChange:ev=>uf('issue_date',ev.target.value)})),
+          e('div',null,e('label',{className:'lb'},'Platnost do'),e('input',{type:'date',value:q.valid_until||'',onChange:ev=>uf('valid_until',ev.target.value)}))):null,
+        e('div',{style:{marginBottom:8}},e('label',{className:'lb'},'Sleva na celou nabídku (%)'),e('input',{type:'number',value:q.discount_percent||0,onChange:ev=>uf('discount_percent',Number(ev.target.value)),min:0,max:100,step:0.5,style:{maxWidth:120}})),
+        e('div',{style:{marginBottom:8}},e('label',{className:'lb'},'Úvodní text (oslovení)'),e('textarea',{value:q.intro_text||'',onChange:ev=>uf('intro_text',ev.target.value),placeholder:'Dobrý den, na základě vaší poptávky zasíláme cenovou nabídku…'})),
+        e('div',null,e('label',{className:'lb'},'Závěrečný text'),e('textarea',{value:q.outro_text||'',onChange:ev=>uf('outro_text',ev.target.value),placeholder:'Těšíme se na spolupráci…'})))),
+    // Items
+    e('div',{className:'card',style:{marginBottom:20}},
+      e('div',{className:'st st-tl'},'Položky'),
+      q.items.map((it,i)=>e('div',{key:it.id,style:{display:'flex',gap:8,marginBottom:8,alignItems:'flex-end'}},
+        e('div',{style:{flex:3}},e('label',{className:'lb'},'Popis'),e('input',{value:it.description,onChange:ev=>uit(i,'description',ev.target.value)})),
+        e('div',{style:{flex:1}},e('label',{className:'lb'},'Mn.'),e('input',{type:'number',value:it.qty,onChange:ev=>uit(i,'qty',ev.target.value),min:0})),
+        e('div',{style:{flex:1}},e('label',{className:'lb'},'Jedn.'),e('select',{value:it.unit,onChange:ev=>uit(i,'unit',ev.target.value)},UN.map(u=>e('option',{key:u,value:u},u)))),
+        e('div',{style:{flex:1}},e('label',{className:'lb'},'Cena'),e('input',{type:'number',value:it.unit_price,onChange:ev=>uit(i,'unit_price',ev.target.value),min:0,step:.01})),
+        vat?e('div',{style:{flex:1}},e('label',{className:'lb'},'DPH'),e('select',{value:it.vat_rate,onChange:ev=>uit(i,'vat_rate',ev.target.value)},VR.map(r=>e('option',{key:r.v,value:r.v},r.l)))):null,
+        e('div',{style:{fontWeight:600,whiteSpace:'nowrap',paddingBottom:9,minWidth:90,textAlign:'right'}},fm(ci(it,vat).total)+' Kč'),
+        q.items.length>1?e('button',{className:'ib',style:{color:'var(--rd)',marginBottom:4},onClick:()=>sQ(p=>({...p,items:p.items.filter((_,j)=>j!==i)}))},'✕'):null)),
+      e('button',{className:'btn btn-gh btn-sm',onClick:()=>sQ(p=>({...p,items:[...p.items,{id:ui(),description:'',qty:1,unit:'ks',unit_price:0,vat_rate:21}]}))},'+ Položka'),
+      e('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:20}},
+        e('div',{style:{minWidth:300}},
+          e('div',{style:{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--bd)'}},e('span',{style:{color:'var(--tx3)'}},'Mezisoučet:'),e('span',{style:{fontWeight:600}},fm(c.totalBase+(c.discount||0))+' Kč')),
+          q.discount_percent>0?e('div',{style:{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--bd)'}},e('span',{style:{color:'var(--tl)'}},'Sleva '+q.discount_percent+'%:'),e('span',{style:{fontWeight:600,color:'var(--tl)'}},'-'+fm(c.discount)+' Kč')):null,
+          e('div',{style:{display:'flex',justifyContent:'space-between',padding:'12px 0',borderTop:'3px solid var(--tl)',marginTop:4}},e('span',{style:{fontSize:20,fontWeight:800,color:'var(--tl)'}},'Celkem:'),e('span',{style:{fontSize:20,fontWeight:800,color:'var(--tl)'}},fm(c.total)+' Kč'))))),
+    e('div',{style:{display:'flex',gap:10,justifyContent:'flex-end'}},
+      e('button',{className:'btn btn-gh',onClick:onCancel},'Zrušit'),
+      e('button',{className:'btn btn-tl',onClick:()=>{if(!q.customer.name){alert('Vyplňte odběratele');return;}onSave(q);}},'Uložit nabídku')));
+}
+
+// ═══ INVOICE LIST ═══
+function InvList({invs,sup,vat,onNew,onEdit,onDel,onPdf,onPaid}){
+  const[f,sF]=uS('all');const[q,sQ]=uS('');
+  const fl=invs.filter(i=>(f==='all'||i.status===f)&&(!q||i.number?.toLowerCase().includes(q.toLowerCase())||i.customer?.name?.toLowerCase().includes(q.toLowerCase())));
+  return e('div',null,
+    e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}},e('h1',{style:{fontSize:28,fontWeight:800}},'Faktury'),e('button',{className:'btn btn-pr',onClick:onNew},'+ Nová faktura')),
+    e('div',{style:{display:'flex',gap:2,marginBottom:20,borderBottom:'2px solid var(--bd)'}},['all','new','sent','paid','overdue'].map(t=>e('button',{key:t,onClick:()=>sF(t),style:{padding:'10px 16px',background:'none',border:'none',borderBottom:f===t?'2px solid var(--ac)':'2px solid transparent',color:f===t?'var(--ac)':'var(--tx3)',fontSize:13,fontWeight:f===t?600:500,cursor:'pointer',marginBottom:-2,fontFamily:'inherit'}},{all:'Všechny',new:'Nové',sent:'Odeslané',paid:'Uhrazené',overdue:'Po splatnosti'}[t]))),
+    e('input',{value:q,onChange:ev=>sQ(ev.target.value),placeholder:'Hledat…',style:{maxWidth:340,marginBottom:20}}),
+    e('div',{className:'card',style:{padding:0,overflow:'hidden'}},
+      e('table',null,e('thead',null,e('tr',null,e('th',null,'Číslo'),e('th',null,'Stav'),e('th',null,'Odběratel'),e('th',null,'Vystaveno'),e('th',null,'Splatnost'),e('th',{style:{textAlign:'right'}},'Cena'),e('th',null,'Akce'))),
+        e('tbody',null,fl.map(inv=>{const t=cI(inv,vat).total;const s=IS[inv.status]||IS.new;
+          return e('tr',{key:inv.id},e('td',null,e('span',{style:{fontWeight:600,color:'var(--ac)'}},inv.number),inv.quote_id?e('span',{style:{fontSize:10,color:'var(--tl)',marginLeft:4}},' ←NAB'):null),e('td',null,e('span',{className:'badge',style:{color:s.c,background:s.b}},s.l)),e('td',null,inv.customer?.name),e('td',null,fd(inv.issue_date)),e('td',null,fd(inv.due_date)),e('td',{style:{textAlign:'right',fontWeight:600}},fm(t)+' Kč'),e('td',null,e('div',{style:{display:'flex',gap:3}},e('button',{className:'ib',onClick:()=>onPdf(inv)},'📄'),e('button',{className:'ib',onClick:()=>onEdit(inv)},'✏️'),inv.status!=='paid'?e('button',{className:'ib',onClick:()=>onPaid(inv.id),style:{color:'var(--gn)'}},'✓'):null,e('button',{className:'ib',onClick:()=>{if(confirm('Smazat?'))onDel(inv.id);},style:{color:'var(--rd)'}},'🗑'))));}))),
+      fl.length===0?e('p',{style:{textAlign:'center',padding:36,color:'var(--tx3)'}},'Žádné faktury'):null));
+}
+
+// ═══ DRAFTS LIST ═══
+function DraftList({drafts,sup,vat,onNew,onEdit,onDel,onIssue}){
+  return e('div',null,
+    e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}},e('h1',{style:{fontSize:28,fontWeight:800}},'Rozpracované'),e('button',{className:'btn btn-pp',onClick:onNew},'+ Nová rozpracovaná')),
+    e('p',{style:{color:'var(--tx2)',fontSize:14,marginBottom:20}},'Průběžně přidávejte položky. "Vystavit" doplní číslo a datum.'),
+    drafts.length===0?e('div',{className:'card',style:{textAlign:'center',padding:48,color:'var(--tx3)'}},'Žádné rozpracované'):null,
+    drafts.map(inv=>{const c=cI(inv,vat);
+      return e('div',{key:inv.id,className:'card',style:{marginBottom:16}},
+        e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}},
+          e('div',null,e('span',{style:{fontWeight:700,fontSize:16,color:'var(--pp)'}},inv.customer?.name||'Bez odběratele'),e('span',{style:{color:'var(--tx3)',fontSize:12,marginLeft:12}},inv.items?.length+' pol. · '+fd(inv.created_at))),
+          e('div',{style:{display:'flex',gap:6,alignItems:'center'}},
+            e('span',{style:{fontSize:18,fontWeight:800}},fm(c.total)+' Kč'),
+            e('button',{className:'btn btn-gh btn-sm',onClick:()=>onEdit(inv)},'Upravit'),
+            e('button',{className:'btn btn-pp btn-sm',onClick:()=>onIssue(inv.id)},'Vystavit'),
+            e('button',{className:'ib',onClick:()=>{if(confirm('Smazat?'))onDel(inv.id);},style:{color:'var(--rd)'}},'🗑'))),
+        e('table',null,e('thead',null,e('tr',null,e('th',null,'Popis'),e('th',{style:{width:80}},'Mn.'),e('th',{style:{textAlign:'right',width:100}},'Cena/ks'),e('th',{style:{textAlign:'right',width:120}},'Celkem'))),
+          e('tbody',null,inv.items?.filter(it=>it.description).map(it=>e('tr',{key:it.id},e('td',null,it.description),e('td',{style:{textAlign:'center'}},it.qty+' '+it.unit),e('td',{style:{textAlign:'right'}},fm(it.unit_price)+' Kč'),e('td',{style:{textAlign:'right',fontWeight:600}},fm(ci(it,vat).total)+' Kč'))))));
+    }));
+}
+
+// ═══ INVOICE FORM ═══
+function InvForm({inv:init,sup,vat,onSave,onCancel,custs}){
+  const[inv,sI]=uS(init);const[al,sAl]=uS(false);const[am,sAm]=uS('');
+  const c=cI(inv,vat);const dr=inv.status==='draft';
+  const uf=(f,v)=>sI(p=>({...p,[f]:v}));const uc=(f,v)=>sI(p=>({...p,customer:{...p.customer,[f]:v}}));
+  const uit=(i,f,v)=>sI(p=>{const items=[...p.items];items[i]={...items[i],[f]:f==='qty'||f==='unit_price'||f==='vat_rate'?Number(v):v};return{...p,items};});
+  const lk=async()=>{if(!inv.customer.ico)return;sAl(true);const d=await ares(inv.customer.ico);sAl(false);if(d){sI(p=>({...p,customer:{...p.customer,...d}}));sAm('✓');}else sAm('✕');};
+
+  return e('div',null,
+    e('h1',{style:{fontSize:28,fontWeight:800,color:dr?'var(--pp)':'var(--pr)',marginBottom:dr?4:24}},dr?'Rozpracovaná faktura':inv.number?'Faktura #'+inv.number:'Nová faktura'),
+    dr?e('p',{style:{color:'var(--pp)',fontSize:13,marginBottom:20}},'Číslo a datum se doplní při vystavení'):null,
+    e('div',{className:'g2',style:{marginBottom:20}},
+      e('div',{className:'card'},
+        e('div',{className:dr?'st st-pp':'st st-ac'},'Odběratel'),
+        custs.length>0?e('div',{style:{marginBottom:8}},e('label',{className:'lb'},'Ze seznamu'),e('select',{value:'',onChange:ev=>{const x=custs.find(c=>c.ico===ev.target.value);if(x)sI(p=>({...p,customer:{...p.customer,...x}}));}},e('option',{value:''},'—'),custs.map(c=>e('option',{key:c.ico,value:c.ico},c.name)))):null,
+        e('div',{style:{display:'flex',gap:8,marginBottom:8}},e('div',{style:{flex:1}},e('label',{className:'lb'},'IČO'),e('input',{value:inv.customer.ico,onChange:ev=>uc('ico',ev.target.value)})),e('button',{className:'btn btn-ac btn-sm',style:{alignSelf:'flex-end'},onClick:lk},al?'…':'ARES')),
+        am?e('div',{style:{fontSize:12,marginBottom:6,color:am==='✕'?'var(--rd)':'var(--gn)'}},am==='✓'?'Načteno':'Nenalezeno'):null,
+        ['name','dic','street'].map(f=>e('div',{key:f,style:{marginBottom:6}},e('label',{className:'lb'},{name:'Název',dic:'DIČ',street:'Ulice'}[f]),e('input',{value:inv.customer[f]||'',onChange:ev=>uc(f,ev.target.value)}))),
+        e('div',{className:'g2',style:{gap:8}},e('div',null,e('label',{className:'lb'},'Město'),e('input',{value:inv.customer.city||'',onChange:ev=>uc('city',ev.target.value)})),e('div',null,e('label',{className:'lb'},'PSČ'),e('input',{value:inv.customer.zip||'',onChange:ev=>uc('zip',ev.target.value)})))),
+      !dr?e('div',{className:'card'},
+        e('div',{className:'st st-ac'},'Údaje'),
+        e('div',{className:'g2',style:{gap:10}},
+          e('div',null,e('label',{className:'lb'},'Číslo'),e('input',{value:inv.number,onChange:ev=>uf('number',ev.target.value)})),
+          e('div',null,e('label',{className:'lb'},'Úhrada'),e('select',{value:inv.payment_method,onChange:ev=>uf('payment_method',ev.target.value)},PM.map(m=>e('option',{key:m.v,value:m.v},m.l)))),
+          e('div',null,e('label',{className:'lb'},'Vystavení'),e('input',{type:'date',value:inv.issue_date||'',onChange:ev=>uf('issue_date',ev.target.value)})),
+          e('div',null,e('label',{className:'lb'},'Splatnost'),e('input',{type:'date',value:inv.due_date||'',onChange:ev=>uf('due_date',ev.target.value)})),
+          e('div',null,e('label',{className:'lb'},'Stav'),e('select',{value:inv.status,onChange:ev=>uf('status',ev.target.value)},Object.entries(IS).map(([k,v])=>e('option',{key:k,value:k},v.l))))),
+        e('div',{style:{marginTop:10}},e('label',{className:'lb'},'Poznámka'),e('textarea',{value:inv.note||'',onChange:ev=>uf('note',ev.target.value)}))):
+      e('div',{className:'card'},e('div',{className:'st st-pp'},'Poznámky'),
+        e('div',{style:{marginBottom:8}},e('label',{className:'lb'},'Úhrada'),e('select',{value:inv.payment_method,onChange:ev=>uf('payment_method',ev.target.value)},PM.map(m=>e('option',{key:m.v,value:m.v},m.l)))),
+        e('div',null,e('label',{className:'lb'},'Poznámka'),e('textarea',{value:inv.note||'',onChange:ev=>uf('note',ev.target.value)})))),
+    // Items
+    e('div',{className:'card',style:{marginBottom:20}},
+      e('div',{className:dr?'st st-pp':'st st-ac'},'Položky'),
+      inv.items.map((it,i)=>e('div',{key:it.id,style:{display:'flex',gap:8,marginBottom:8,alignItems:'flex-end'}},
+        e('div',{style:{flex:3}},e('label',{className:'lb'},'Popis'),e('input',{value:it.description,onChange:ev=>uit(i,'description',ev.target.value)})),
+        e('div',{style:{flex:1}},e('label',{className:'lb'},'Mn.'),e('input',{type:'number',value:it.qty,onChange:ev=>uit(i,'qty',ev.target.value)})),
+        e('div',{style:{flex:1}},e('label',{className:'lb'},'Cena'),e('input',{type:'number',value:it.unit_price,onChange:ev=>uit(i,'unit_price',ev.target.value),step:.01})),
+        vat?e('div',{style:{flex:1}},e('label',{className:'lb'},'DPH'),e('select',{value:it.vat_rate,onChange:ev=>uit(i,'vat_rate',ev.target.value)},VR.map(r=>e('option',{key:r.v,value:r.v},r.l)))):null,
+        e('div',{style:{fontWeight:600,whiteSpace:'nowrap',paddingBottom:9,minWidth:90,textAlign:'right'}},fm(ci(it,vat).total)+' Kč'),
+        inv.items.length>1?e('button',{className:'ib',style:{color:'var(--rd)',marginBottom:4},onClick:()=>sI(p=>({...p,items:p.items.filter((_,j)=>j!==i)}))},'✕'):null)),
+      e('button',{className:'btn btn-gh btn-sm',onClick:()=>sI(p=>({...p,items:[...p.items,{id:ui(),description:'',qty:1,unit:'ks',unit_price:0,vat_rate:21}]}))},'+ Položka'),
+      e('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:20}},e('div',{style:{minWidth:280}},
+        e('div',{style:{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--bd)'}},e('span',{style:{color:'var(--tx3)'}},'Základ:'),e('span',{style:{fontWeight:600}},fm(c.totalBase)+' Kč')),
+        e('div',{style:{display:'flex',justifyContent:'space-between',padding:'12px 0',borderTop:'3px solid var(--pr)',marginTop:4}},e('span',{style:{fontSize:20,fontWeight:800}},'Celkem:'),e('span',{style:{fontSize:20,fontWeight:800}},fm(c.total)+' Kč'))))),
+    e('div',{style:{display:'flex',gap:10,justifyContent:'flex-end'}},
+      e('button',{className:'btn btn-gh',onClick:onCancel},'Zrušit'),
+      e('button',{className:dr?'btn btn-pp':'btn btn-pr',onClick:()=>{if(!dr&&!inv.customer.name){alert('Vyplňte odběratele');return;}onSave(inv);}},'Uložit')));
+}
+
+// ═══ RECURRING / CUSTOMERS / PAYMENTS / SETTINGS (compact) ═══
+function RecList({recs,sup,vat,reload,tt}){
+  return e('div',null,e('h1',{style:{fontSize:28,fontWeight:800,marginBottom:24}},'Pravidelné faktury'),
+    e('p',{style:{color:'var(--tx3)',marginBottom:16}},'Správa pravidelných faktur přes API. Počet: '+recs.length),
+    recs.map(r=>e('div',{key:r.id,className:'card',style:{marginBottom:12,display:'flex',justifyContent:'space-between',alignItems:'center'}},
+      e('div',null,e('strong',null,r.name||r.customer?.name),' · ',r.recurrence,' · ',fm(cI({items:r.items},vat).total)+' Kč · Další: '+fd(r.next_date)),
+      e('span',{className:'badge',style:{color:r.active?'var(--gn)':'var(--tx3)',background:r.active?'#ecfdf5':'var(--sf2)'}},r.active?'Aktivní':'Stop'))));
+}
+function CustList({custs,setCusts}){
+  const[q,sQ]=uS('');const fl=custs.filter(c=>!q||c.name?.toLowerCase().includes(q.toLowerCase())||c.ico?.includes(q));
+  return e('div',null,e('h1',{style:{fontSize:28,fontWeight:800,marginBottom:24}},'Odběratelé'),
+    e('input',{value:q,onChange:ev=>sQ(ev.target.value),placeholder:'Hledat…',style:{maxWidth:340,marginBottom:20}}),
+    e('div',{className:'card',style:{padding:0,overflow:'hidden'}},
+      e('table',null,e('thead',null,e('tr',null,e('th',null,'Název'),e('th',null,'IČO'),e('th',null,'Město'),e('th',null,'Email'),e('th',null,''))),
+        e('tbody',null,fl.map(c=>e('tr',{key:c.ico},e('td',{style:{fontWeight:600}},c.name),e('td',null,c.ico),e('td',null,c.city),e('td',null,c.email||'—'),
+          e('td',null,e('button',{className:'ib',onClick:async()=>{if(confirm('Smazat?')){await A.d('/customers/'+c.id);setCusts();}},style:{color:'var(--rd)'}},'🗑')))))),
+      fl.length===0?e('p',{style:{textAlign:'center',padding:36,color:'var(--tx3)'}},'Žádní odběratelé'):null));
+}
+function PayList({invs,sup,vat,onPaid}){
+  const t=td();const un=invs.filter(i=>i.status!=='paid'&&i.status!=='cancelled').sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''));
+  const tot=un.reduce((s,i)=>s+cI(i,vat).total,0);
+  return e('div',null,e('h1',{style:{fontSize:28,fontWeight:800,marginBottom:24}},'Platby'),
+    e('div',{className:'card',style:{borderLeft:'4px solid var(--am)',marginBottom:24}},e('div',{className:'lb'},'Neuhrazeno'),e('div',{style:{fontSize:22,fontWeight:800,color:'var(--am)',marginTop:6}},fm(tot)+' Kč'),e('div',{style:{fontSize:11,color:'var(--tx3)',marginTop:4}},un.length+' faktur')),
+    e('div',{className:'card'},un.map(inv=>{const x=cI(inv,vat).total;const ov=inv.due_date&&inv.due_date<t;
+      return e('div',{key:inv.id,style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--bd)'}},
+        e('div',null,e('strong',{style:{color:ov?'var(--rd)':'var(--tx)'}},inv.number),' · ',inv.customer?.name,ov?e('span',{style:{color:'var(--rd)',fontSize:11,marginLeft:6}},' ⚠ po splatnosti'):null),
+        e('div',{style:{display:'flex',alignItems:'center',gap:10}},e('span',{style:{fontWeight:700}},fm(x)+' Kč'),e('button',{className:'btn btn-sm',style:{background:'var(--gn)',color:'#fff'},onClick:()=>onPaid(inv.id)},'✓ Uhrazeno')));}),
+      un.length===0?e('p',{style:{color:'var(--tx3)',textAlign:'center',padding:20}},'Vše uhrazeno!'):null));
+}
+function Sett({sup,reload,tt}){
+  const[s,sS]=uS({...sup});const[al,sAl]=uS(false);const[am,sAm]=uS('');const fr=uR(null);
+  const u=(f,v)=>sS(p=>({...p,[f]:v}));
+  const save=async()=>{await A.u('/supplier',s);await reload();tt('✓ Uloženo');};
+  const lk=async()=>{if(!s.ico)return;sAl(true);const d=await ares(s.ico);sAl(false);if(d){sS(p=>({...p,...d,is_vat_payer:!!d.dic}));sAm('✓');}else sAm('✕');};
+  const logoUp=ev=>{const f=ev.target.files[0];if(!f)return;if(f.size>500000){alert('Max 500KB');return;}const r=new FileReader();r.onload=e=>{u('logo_image',e.target.result);};r.readAsDataURL(f);};
+
+  return e('div',null,e('h1',{style:{fontSize:28,fontWeight:800,marginBottom:24}},'Nastavení'),
+    // Logo
+    e('div',{className:'card',style:{marginBottom:20}},
+      e('div',{className:'st st-ac'},'Logo firmy'),
+      e('div',{className:'g2'},
+        e('div',null,
+          e('div',{style:{marginBottom:10}},e('label',{className:'lb'},'Obrázek (PNG/JPG, max 500KB)'),
+            e('input',{ref:fr,type:'file',accept:'image/*',onChange:logoUp,style:{display:'none'}}),
+            e('div',{style:{display:'flex',gap:8}},e('button',{className:'btn btn-gh btn-sm',onClick:()=>fr.current?.click()},'Nahrát'),s.logo_image?e('button',{className:'btn btn-dn btn-sm',onClick:()=>u('logo_image','')},'Odebrat'):null)),
+          e('div',null,e('label',{className:'lb'},'Textové logo (alternativa)'),e('input',{value:s.logo_text||'',onChange:ev=>u('logo_text',ev.target.value),placeholder:'Název firmy'}))),
+        e('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:100,background:'var(--sf2)',borderRadius:10,border:'1.5px dashed var(--bd)'}},
+          s.logo_image?e('img',{src:s.logo_image,style:{maxHeight:50,maxWidth:180,objectFit:'contain'}}):s.logo_text?e('div',{style:{fontSize:26,fontWeight:800,color:'var(--pr)'}},s.logo_text):e('span',{style:{color:'var(--tx3)'}},'Žádné logo')))),
+    e('div',{className:'g2',style:{marginBottom:20}},
+      e('div',{className:'card'},
+        e('div',{className:'st st-ac'},'Dodavatel'),
+        e('div',{style:{display:'flex',gap:8,marginBottom:8}},e('div',{style:{flex:1}},e('label',{className:'lb'},'IČO'),e('input',{value:s.ico||'',onChange:ev=>u('ico',ev.target.value)})),e('button',{className:'btn btn-ac btn-sm',style:{alignSelf:'flex-end'},onClick:lk},al?'…':'ARES')),
+        am?e('div',{style:{fontSize:12,marginBottom:6,color:am==='✕'?'var(--rd)':'var(--gn)'}},am==='✓'?'Načteno':'Nenalezeno'):null,
+        ['name','dic','street'].map(f=>e('div',{key:f,style:{marginBottom:6}},e('label',{className:'lb'},{name:'Název',dic:'DIČ',street:'Ulice'}[f]),e('input',{value:s[f]||'',onChange:ev=>u(f,ev.target.value)}))),
+        e('div',{className:'g2',style:{gap:8,marginBottom:6}},e('div',null,e('label',{className:'lb'},'Město'),e('input',{value:s.city||'',onChange:ev=>u('city',ev.target.value)})),e('div',null,e('label',{className:'lb'},'PSČ'),e('input',{value:s.zip||'',onChange:ev=>u('zip',ev.target.value)}))),
+        e('div',{className:'g2',style:{gap:8,marginBottom:8}},e('div',null,e('label',{className:'lb'},'Email'),e('input',{value:s.email||'',onChange:ev=>u('email',ev.target.value)})),e('div',null,e('label',{className:'lb'},'Telefon'),e('input',{value:s.phone||'',onChange:ev=>u('phone',ev.target.value)}))),
+        e('label',{style:{display:'flex',alignItems:'center',gap:10,cursor:'pointer',fontWeight:600}},e('input',{type:'checkbox',checked:!!s.is_vat_payer,onChange:ev=>u('is_vat_payer',ev.target.checked),style:{width:18,height:18}}),'Plátce DPH')),
+      e('div',{className:'card'},
+        e('div',{className:'st st-ac'},'Platby & Fakturace'),
+        e('div',{className:'g2',style:{gap:8,marginBottom:6}},e('div',null,e('label',{className:'lb'},'Účet'),e('input',{value:s.bank_account||'',onChange:ev=>u('bank_account',ev.target.value)})),e('div',null,e('label',{className:'lb'},'Kód banky'),e('input',{value:s.bank_code||'',onChange:ev=>u('bank_code',ev.target.value)}))),
+        e('div',{style:{marginBottom:6}},e('label',{className:'lb'},'IBAN'),e('input',{value:s.iban||'',onChange:ev=>u('iban',ev.target.value)})),
+        e('div',{style:{marginBottom:12}},e('label',{className:'lb'},'SWIFT'),e('input',{value:s.swift||'',onChange:ev=>u('swift',ev.target.value)})),
+        e('div',{className:'g2',style:{gap:8,marginBottom:6}},
+          e('div',null,e('label',{className:'lb'},'Formát č. faktur'),e('input',{value:s.number_format||'{YYYY}{NNNN}',onChange:ev=>u('number_format',ev.target.value)})),
+          e('div',null,e('label',{className:'lb'},'Formát č. nabídek'),e('input',{value:s.quote_number_format||'NAB{YYYY}/{NNN}',onChange:ev=>u('quote_number_format',ev.target.value)}))),
+        e('div',{className:'g2',style:{gap:8,marginBottom:6}},
+          e('div',null,e('label',{className:'lb'},'Splatnost (dní)'),e('input',{type:'number',value:s.default_due_days||14,onChange:ev=>u('default_due_days',Number(ev.target.value))})),
+          e('div',null,e('label',{className:'lb'},'Platnost nabídky (dní)'),e('input',{type:'number',value:s.default_quote_validity_days||30,onChange:ev=>u('default_quote_validity_days',Number(ev.target.value))}))),
+        e('div',{style:{marginBottom:6}},e('label',{className:'lb'},'Výchozí úvod nabídky'),e('textarea',{value:s.default_quote_intro||'',onChange:ev=>u('default_quote_intro',ev.target.value),style:{minHeight:48}})),
+        e('div',null,e('label',{className:'lb'},'Výchozí závěr nabídky'),e('textarea',{value:s.default_quote_outro||'',onChange:ev=>u('default_quote_outro',ev.target.value),style:{minHeight:48}})))),
+    e('div',{style:{display:'flex',gap:10}},
+      e('button',{className:'btn btn-pr',onClick:save},'Uložit nastavení'),
+      e('a',{href:'/api/export',className:'btn btn-gh',download:true},'📦 Export')));
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(e(App));
+</script>
+</body>
+</html>
