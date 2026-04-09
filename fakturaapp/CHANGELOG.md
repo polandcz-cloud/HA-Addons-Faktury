@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.3
+- Fix: ARES lookup now goes through server proxy (fixes ingress CSP blocking)
+
 ## 2.1.2
 - Fix: White screen when navigating between pages (React hooks issue)
 
@@ -12,3 +15,4 @@
 - Rozpracované faktury
 - Logo firmy
 - QR Platba, ARES, PDF
+
