@@ -1,4 +1,4 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/hassio-addons/base-nodejs:18.0.0
 FROM $BUILD_FROM
 
 # Přepnout na root
